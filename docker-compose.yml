@@ -5,9 +5,11 @@ services:
     image: postgres:16-alpine
     container_name: sweetfactory_db
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
-      POSTGRES_DB: sweetfactory
-      POSTGRES_USER: sweetfactory
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -22,11 +24,13 @@ services:
     build: ./backend
     container_name: sweetfactory_backend
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
-      DATABASE_URL: postgresql+asyncpg://sweetfactory:${DB_PASSWORD}@db:5432/sweetfactory
+      DATABASE_URL: postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
       DATABASE_PASSWORD: ${DB_PASSWORD}
-      DATABASE_USER: sweetfactory
-      DATABASE_NAME: sweetfactory
+      DATABASE_USER: ${DB_USER}
+      DATABASE_NAME: ${DB_NAME}
       SECRET_KEY: ${SECRET_KEY}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY}
       APP_ENV: production
