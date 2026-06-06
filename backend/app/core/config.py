@@ -32,9 +32,9 @@ class Settings(BaseSettings):
     # -------------------------------------------------------------------------
     DATABASE_HOST: str = "db"
     DATABASE_PORT: int = 5432
-    DATABASE_NAME: str = "sweet_factory_db"
-    DATABASE_USER: str = "sweet_factory_user"
-    DATABASE_PASSWORD: str
+    DATABASE_NAME: str = "sweetfactory"
+    DATABASE_USER: str = "sweetfactory"
+    DATABASE_PASSWORD: Optional[str] = None
     DATABASE_URL: Optional[str] = None
 
     @field_validator("DATABASE_URL", mode="before")
@@ -43,6 +43,8 @@ class Settings(BaseSettings):
         if v:
             return v
         data = info.data
+        if not all([data.get("DATABASE_USER"), data.get("DATABASE_PASSWORD"), data.get("DATABASE_NAME")]):
+            return None
         return (
             f"postgresql+asyncpg://{data['DATABASE_USER']}:"
             f"{data['DATABASE_PASSWORD']}@{data['DATABASE_HOST']}:"

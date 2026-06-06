@@ -1,0 +1,64 @@
+services:
+
+  # ── Database ────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: sweetfactory_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: sweetfactory
+      POSTGRES_USER: sweetfactory
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sweetfactory"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Backend (FastAPI) ───────────────────────────────
+  backend:
+    build: ./backend
+    container_name: sweetfactory_backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+asyncpg://sweetfactory:${DB_PASSWORD}@db:5432/sweetfactory
+      DATABASE_PASSWORD: ${DB_PASSWORD}
+      DATABASE_USER: sweetfactory
+      DATABASE_NAME: sweetfactory
+      SECRET_KEY: ${SECRET_KEY}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      APP_ENV: production
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-*}
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ── Frontend (Static) ───────────────────────────────
+  frontend:
+    build: ./frontend
+    container_name: sweetfactory_frontend
+    restart: unless-stopped
+
+  # ── NGINX (Reverse Proxy) ───────────────────────────
+  nginx:
+    image: nginx:alpine
+    container_name: sweetfactory_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - backend
+      - frontend
+
+volumes:
+  postgres_data:
